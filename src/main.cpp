@@ -44,6 +44,7 @@ int lastButtonState = HIGH;
 unsigned long lastDebounceTime = 0;
 unsigned long debounceDelay = 50; // Debounce time in milliseconds
 
+void initializeHardware();
 void processRFIDCard();
 void openDoor();
 void closeDoor();
@@ -58,25 +59,8 @@ void setup()
   // Initialize serial communication
   Serial.begin(9600);
 
-  // Initialize pins
-  pinMode(GREEN_LED, OUTPUT);
-  pinMode(RED_LED, OUTPUT);
-  pinMode(BUZZER, OUTPUT);
-  pinMode(BUTTON_PIN, INPUT_PULLUP); // Using internal pull-up resistor
-
-  // Initial LED states
-  digitalWrite(GREEN_LED, LOW);
-  digitalWrite(RED_LED, LOW);
-
-  // Initialize SPI bus
-  SPI.begin();
-
-  // Initialize MFRC522
-  mfrc522.PCD_Init();
-
-  // Initialize servo
-  doorServo.attach(SERVO_PIN);
-  stopServo(); // Make sure servo is stopped at startup
+  // Initialize hardware
+  initializeHardware();
 
   Serial.println("RFID Door Control System");
   Serial.println("Scan your card or press button to open door...");
@@ -104,6 +88,29 @@ void loop()
   {
     closeDoor();
   }
+}
+
+void initializeHardware()
+{
+  // Initialize pins
+  pinMode(GREEN_LED, OUTPUT);
+  pinMode(RED_LED, OUTPUT);
+  pinMode(BUZZER, OUTPUT);
+  pinMode(BUTTON_PIN, INPUT_PULLUP); // Using internal pull-up resistor
+
+  // Initial LED states
+  digitalWrite(GREEN_LED, LOW);
+  digitalWrite(RED_LED, LOW);
+
+  // Initialize SPI bus
+  SPI.begin();
+
+  // Initialize MFRC522
+  mfrc522.PCD_Init();
+
+  // Initialize servo
+  doorServo.attach(SERVO_PIN);
+  stopServo(); // Make sure servo is stopped at startup
 }
 
 void checkButton()
