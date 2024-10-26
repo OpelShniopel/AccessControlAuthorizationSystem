@@ -57,7 +57,7 @@ void checkButton();
 void setup()
 {
   // Initialize serial communication
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   // Initialize hardware
   initializeHardware();
@@ -204,7 +204,7 @@ void closeDoor()
   doorIsOpen = false;
   lastDoorAction = millis();
   digitalWrite(GREEN_LED, LOW);
-  tone(BUZZER, 1000, 200);
+  // tone(BUZZER, 1000, 200);
 }
 
 void stopServo()
