@@ -2,6 +2,8 @@
 #include <MFRC522.h>
 #include <Servo.h>
 
+#include "secrets.h"
+
 // Pins for RFID RC522
 #define RST_PIN 9
 #define SS_PIN 10
@@ -25,16 +27,9 @@ MFRC522 mfrc522(SS_PIN, RST_PIN);
 Servo doorServo;
 
 // Array of authorized UIDs
-const byte AUTHORIZED_CARDS[][4] = {
-    // {0xCA, 0x8E, 0xDD, 0x98},
-    // {0x0A, 0x13, 0xDF, 0x99},
-    // {0x48, 0xFB, 0xA6, 0xA2},
-    // {0xB8, 0x9A, 0xB8, 0xA2},
-    // {0x38, 0xEC, 0x89, 0xA2},
-    {0x8B, 0x7A, 0x01, 0xE3},
-    {0xDC, 0xBE, 0x27, 0x63}}; // Key fob
+extern const byte AUTHORIZED_CARDS[][4];
 
-const int NUM_CARDS = sizeof(AUTHORIZED_CARDS) / sizeof(AUTHORIZED_CARDS[0]);
+const int NUM_CARDS = NUM_AUTHORIZED_CARDS;
 
 // Door and button state variables
 bool doorIsOpen = false;
