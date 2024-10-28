@@ -26,7 +26,7 @@ private:
             uidString += String(uidBytes[i], HEX);
         }
         uidString.toLowerCase();
-        return uidString; // Now returns without spaces, just hex digits
+        return uidString;
     }
 
 public:
@@ -62,7 +62,7 @@ public:
         // Create JSON request
         StaticJsonDocument<1024> doc;
         doc["UUID"] = deviceUUID;
-        doc["content"] = cardUID; // This will be pure hex digits now
+        doc["content"] = cardUID;
 
         String jsonString;
         serializeJson(doc, jsonString);
