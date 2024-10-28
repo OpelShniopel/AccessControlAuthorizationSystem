@@ -2,7 +2,7 @@
 #include <MFRC522.h>
 #include <Servo.h>
 
-#include "secrets.h"
+#include "arduino_secrets.h"
 
 // Pins for RFID RC522
 #define RST_PIN 9
@@ -53,6 +53,7 @@ void setup()
 {
   // Initialize serial communication
   Serial.begin(115200);
+  delay(2000);
 
   // Initialize hardware
   initializeHardware();
