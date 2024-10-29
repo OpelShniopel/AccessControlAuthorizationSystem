@@ -26,8 +26,8 @@
 
 // MFRC522 and Servo instances
 MFRC522 mfrc522(SS_PIN, RST_PIN);
-Servo doorServo;
 RFIDAuth rfidAuth(SERVER_ADDRESS, SERVER_PORT, DEVICE_UUID);
+Servo doorServo;
 
 // Door and button state variables
 bool doorIsOpen = false;
@@ -42,7 +42,6 @@ void setupWiFi();
 void processRFIDCard();
 void openDoor();
 void closeDoor();
-bool compareUID(byte *uid1, const byte *uid2);
 void signalAccessGranted();
 void signalAccessDenied();
 void stopServo();
@@ -167,7 +166,6 @@ void processRFIDCard()
   // Handle authorization result
   if (authorized)
   {
-    Serial.println("Server Authorization Granted!");
     signalAccessGranted();
     if (!doorIsOpen)
     {
@@ -177,7 +175,6 @@ void processRFIDCard()
   }
   else
   {
-    Serial.println("Server Authorization Denied!");
     signalAccessDenied();
   }
 
@@ -210,18 +207,6 @@ void closeDoor()
 void stopServo()
 {
   doorServo.write(SERVO_STOP); // Stop servo rotation
-}
-
-bool compareUID(byte *uid1, const byte *uid2)
-{
-  for (byte i = 0; i < 4; i++)
-  {
-    if (uid1[i] != uid2[i])
-    {
-      return false;
-    }
-  }
-  return true;
 }
 
 void signalAccessGranted()
