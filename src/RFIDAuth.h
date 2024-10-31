@@ -216,7 +216,6 @@ public:
             response += (char)client.read();
         }
         Serial.print("Response body: ");
-        Serial.println(response);
 
         if (authorized)
         {
