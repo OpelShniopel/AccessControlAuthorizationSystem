@@ -42,19 +42,11 @@ private:
             {
                 result += "0";
             }
-            result += String(uidBytes[i], DEC);
+            result += String(uidBytes[i], HEX);
         }
-        return result;
-    }
 
-    // Helper function to convert string to byte array for encryption
-    void stringToBytes(const String &str, uint8_t *bytes)
-    {
-        size_t len = str.length();
-        for (size_t i = 0; i < len; i++)
-        {
-            bytes[i] = str.charAt(i);
-        }
+        result.toUpperCase();
+        return result;
     }
 
     // Helper function to convert byte array to hex string (ASCII)
@@ -70,6 +62,7 @@ private:
             result += hexChars[byte >> 4];
             result += hexChars[byte & 0x0F];
         }
+
         return result;
     }
 
@@ -88,34 +81,6 @@ private:
         Serial.println(byteArrayToHexString(data, size));
     }
 
-    // PKCS7 padding implementation
-    size_t addPKCS7Padding(uint8_t *input, size_t input_length, uint8_t *output)
-    {
-        const size_t blockSize = 16;
-        uint8_t padding_length = blockSize - (input_length % blockSize);
-        if (padding_length == 0)
-        {
-            padding_length = blockSize;
-        }
-
-        memset(output, 0, 32);
-        memcpy(output, input, input_length);
-
-        for (size_t i = input_length; i < input_length + padding_length; i++)
-        {
-            output[i] = padding_length;
-        }
-
-        Serial.print("Input length: ");
-        Serial.println(input_length);
-        Serial.print("Padding length: ");
-        Serial.println(padding_length);
-        Serial.print("Total length: ");
-        Serial.println(input_length + padding_length);
-
-        return input_length + padding_length;
-    }
-
     // Encrypt the UID using AES-128-CBC with random IV
     void encryptUID(byte *uidBytes, byte size, String &encryptedContent, String &ivHex)
     {
@@ -126,31 +91,37 @@ private:
         // Store IV hex string before encryption
         ivHex = byteArrayToHexString(iv, 16);
 
-        // First convert UID to database format string
+        // First convert UID to hex string format
         String formattedUID = formatUID(uidBytes, size);
-        Serial.print("Formatted UID (database format): ");
+        Serial.print("Formatted UID (hex): ");
         Serial.println(formattedUID);
 
-        // Convert formatted string to bytes for encryption
-        uint8_t uidData[32] = {0};
-        stringToBytes(formattedUID, uidData);
-
-        printBytes("UID bytes for encryption", uidData, formattedUID.length());
+        // Calculate exact number of bytes needed for the UID
+        size_t uidByteLength = size;
 
         // Prepare input buffer with padding
-        uint8_t padded_input[32] = {0};
-        size_t padded_length = addPKCS7Padding(uidData, formattedUID.length(), padded_input);
+        uint8_t input[16] = {0}; // AES block size
 
-        printBytes("Padded input before encryption", padded_input, padded_length);
+        // Copy direct UID bytes
+        memcpy(input, uidBytes, uidByteLength);
+
+        // Add PKCS7 padding
+        size_t padLength = 16 - (uidByteLength % 16); // Calculate padding length
+        for (size_t i = uidByteLength; i < 16; i++)
+        {
+            input[i] = padLength;
+        }
+
+        printBytes("Input before encryption", input, 16);
         printBytes("Random IV", iv, 16);
 
         // Encrypt the padded data
-        AES128.runEnc(aesKey, 16, padded_input, padded_length, iv);
+        AES128.runEnc(aesKey, 16, input, 16, iv);
 
-        printBytes("Encrypted bytes", padded_input, padded_length);
+        printBytes("Encrypted bytes", input, 16);
 
         // Convert encrypted data to hex string
-        encryptedContent = byteArrayToHexString(padded_input, padded_length);
+        encryptedContent = byteArrayToHexString(input, 16);
 
         Serial.print("IV (hex): ");
         Serial.println(ivHex);
