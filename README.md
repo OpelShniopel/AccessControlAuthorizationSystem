@@ -17,7 +17,7 @@ A secure, WiFi-enabled RFID door control system built with Arduino. The system p
 ## System Requirements
 
 ### Hardware Requirements
-- Arduino board (with WiFiS3 support)
+- Arduino UNO R4 WiFi board
 - MFRC522 RFID reader
 - Continuous rotation servo motor
 - LEDs (green and red)
@@ -114,12 +114,6 @@ When compiling for Renesas boards (UNO R4 WiFi/Minima), you might encounter comp
 
 1. **Locate the `r_sce_if.h` file:**
    
-   For MINIMA:
-   ```bash
-   /Users/{username}/Library/Arduino15/packages/arduino/hardware/renesas_uno/1.1.0/variants/MINIMA/includes/ra/fsp/src/r_sce/crypto_procedures/src/sce5/plainkey/public/inc/r_sce_if.h
-   ```
-   
-   For UNO R4 WiFi:
    ```bash
    /Users/{username}/Library/Arduino15/packages/arduino/hardware/renesas_uno/1.1.0/variants/UNOWI/includes/ra/fsp/src/r_sce/crypto_procedures/src/sce5/plainkey/public/inc/r_sce_if.h
    ```
