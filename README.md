@@ -1,10 +1,9 @@
-# RFID Door Control System
+# RFID Door Control System - Arduino Client
 
-A secure, WiFi-enabled RFID door control system built with Arduino. The system provides controlled access through RFID card authentication with a centralized server, features automatic door control, and includes both visual and audio feedback.
+A secure, WiFi-enabled RFID door control system built with Arduino. The system provides controlled access through RFID card authentication by communicating with a centralized authentication server, featuring automatic door control with visual and audio feedback.
 
 ## Features
-
-- RFID card authentication with secure server communication
+- RFID card authentication via secure server communication
 - AES-128-CBC encryption for card data transmission
 - WiFi connectivity for real-time authorization checks
 - Automatic door control using a servo motor
@@ -15,8 +14,9 @@ A secure, WiFi-enabled RFID door control system built with Arduino. The system p
 - Secure configuration storage
 - Debounced input handling
 
-## Hardware Requirements
+## System Requirements
 
+### Hardware Requirements
 - Arduino board (with WiFiS3 support)
 - MFRC522 RFID reader
 - Continuous rotation servo motor
@@ -27,7 +27,6 @@ A secure, WiFi-enabled RFID door control system built with Arduino. The system p
 - Door mounting hardware
 
 ### Pin Configuration
-
 - RFID RC522:
   - RST_PIN: 9
   - SS_PIN: 10
@@ -39,9 +38,8 @@ A secure, WiFi-enabled RFID door control system built with Arduino. The system p
   - SERVO_PIN: 3
   - BUTTON_PIN: 2
 
-## Software Dependencies
-
-### Required Libraries
+### Software Dependencies
+Required Arduino Libraries:
 - MFRC522
 - Servo
 - WiFiS3
@@ -49,7 +47,11 @@ A secure, WiFi-enabled RFID door control system built with Arduino. The system p
 - ArduinoBearSSL
 - AES128
 
-### Configuration
+### Server Requirement
+This client requires a compatible authentication server. The server implementation can be found at:
+[https://github.com/jmartynas/kiberfizines-grupinis](https://github.com/jmartynas/kiberfizines-grupinis)
+
+## Configuration
 
 Create a `arduino_secrets.h` file with the following parameters:
 ```cpp
@@ -67,19 +69,18 @@ Create a `arduino_secrets.h` file with the following parameters:
    - AES-128-CBC encryption for RFID card data
    - Random IV generation for each transaction
    - Secure key storage in separate header file
+   - PKCS7 padding for encryption
 
-2. **Server Authentication**
-   - Real-time card validation with central server
-   - Device UUID verification
-   - HTTPS support through ArduinoBearSSL
+2. **Device Authentication**
+   - Device UUID verification with server
+   - Encrypted card data transmission
 
 ## Door Control System
 
 ### Operation Modes
-
 1. **RFID Access**
    - Scans RFID cards/fobs
-   - Encrypts card data
+   - Encrypts card data with random IV
    - Validates with server
    - Controls door based on authorization
 
@@ -89,7 +90,6 @@ Create a `arduino_secrets.h` file with the following parameters:
    - Same door control sequence as RFID access
 
 ### Door Control Parameters
-
 - Door movement time: 360ms
 - Auto-close delay: 3000ms (3 seconds)
 - Servo control values:
@@ -97,33 +97,50 @@ Create a `arduino_secrets.h` file with the following parameters:
   - Open: 0°
   - Close: 180°
 
-## Installation
+## Installation & Setup
 
-1. Clone the repository
-2. Install required libraries through Arduino Library Manager
-3. Configure `arduino_secrets.h` with your network and security settings
+1. Install required libraries through Arduino Library Manager
+2. Configure `arduino_secrets.h` with your network and security settings
+3. Ensure the authentication server is set up and running (see server repository)
 4. Upload to your Arduino board
 5. Connect hardware according to pin configuration
 6. Test system with authorized RFID cards
 
-## Usage
-
-1. **Normal Operation**
-   - Present authorized RFID card to reader
-   - Wait for green LED and beep for confirmation
-   - Door will open automatically
-   - Door closes automatically after delay
-
-2. **Manual Exit**
-   - Press internal button
-   - Door opens immediately
-   - Same auto-close behavior applies
-
-3. **Failed Authentication**
-   - Red LED and three beeps indicate denied access
-   - Door remains closed
-
 ## Troubleshooting
+
+### Compilation Issues for Renesas Platform
+
+When compiling for Renesas boards (UNO R4 WiFi/Minima), you might encounter compilation errors due to C++ reserved words in the `r_sce_if.h` file. This file is included through dependencies and needs to be modified to compile successfully.
+
+1. **Locate the `r_sce_if.h` file:**
+   
+   For MINIMA:
+   ```bash
+   /Users/{username}/Library/Arduino15/packages/arduino/hardware/renesas_uno/1.1.0/variants/MINIMA/includes/ra/fsp/src/r_sce/crypto_procedures/src/sce5/plainkey/public/inc/r_sce_if.h
+   ```
+   
+   For UNO R4 WiFi:
+   ```bash
+   /Users/{username}/Library/Arduino15/packages/arduino/hardware/renesas_uno/1.1.0/variants/UNOWI/includes/ra/fsp/src/r_sce/crypto_procedures/src/sce5/plainkey/public/inc/r_sce_if.h
+   ```
+
+2. **Required Changes:**
+   - Replace C++ reserved words `public` and `private` in struct definitions
+   - Example fix for RSA key pair structure:
+   ```c
+   /* RSA 1024bit key pair index structure */
+   typedef struct sce_rsa1024_key_pair_index
+   {
+       sce_rsa1024_private_key_index_t    priv_key;  // Changed from 'private'
+       sce_rsa1024_public_key_index_t     pub_key;   // Changed from 'public'
+   } sce_rsa1024_key_pair_index_t;
+   ```
+   - Search for and replace all other instances of these reserved words in the file
+
+3. **PlatformIO Users:**
+   - The same file modification is required when using PlatformIO
+   - The file location might vary based on your PlatformIO installation and project configuration
+   - Make sure to clean and rebuild the project after making these changes
 
 ### Common Issues
 
@@ -143,11 +160,9 @@ Create a `arduino_secrets.h` file with the following parameters:
    - Check mechanical clearances
 
 ### LED Status Indicators
-
 - **Green LED**
   - Solid: Access granted/door open
   - Off: Door closed/system ready
-
 - **Red LED**
   - Flash: Access denied
   - Off: System ready
