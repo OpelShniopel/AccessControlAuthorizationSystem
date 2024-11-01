@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include <MFRC522.h>
 #include <ArduinoJson.h>
-#include <ArduinoBearSSL.h>
+#include <ArduinoBearSSL.h> // This library is required for AES128
 #include <AES128.h>
 
 #include "arduino_secrets.h"
