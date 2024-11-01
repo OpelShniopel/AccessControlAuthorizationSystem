@@ -7,22 +7,22 @@
 #include "RFIDAuth.h"
 
 // Pins for RFID RC522
-#define RST_PIN 9
-#define SS_PIN 10
+const uint8_t RST_PIN = 9;
+const uint8_t SS_PIN = 10;
 
 // Pins for status indicators and controls
-#define GREEN_LED 7
-#define RED_LED 6
-#define BUZZER 5
-#define SERVO_PIN 3
-#define BUTTON_PIN 2
+const uint8_t GREEN_LED = 7;
+const uint8_t RED_LED = 6;
+const uint8_t BUZZER = 5;
+const uint8_t SERVO_PIN = 3;
+const uint8_t BUTTON_PIN = 2;
 
 // Servo control values for continuous rotation servo
-#define SERVO_STOP 90         // Stop point (should be calibrated with potentiometer)
-#define SERVO_OPEN_SPEED 0    // Full speed one direction
-#define SERVO_CLOSE_SPEED 180 // Full speed other direction
-#define DOOR_MOVE_TIME 360    // Time for door to move from open to close position (360 ms)
-#define DOOR_OPEN_TIME 3000   // Time door stays open before auto-closing (3 seconds)
+const uint8_t SERVO_STOP = 90;         // Stop point (should be calibrated with potentiometer)
+const uint8_t SERVO_OPEN_SPEED = 0;    // Full speed one direction
+const uint8_t SERVO_CLOSE_SPEED = 180; // Full speed other direction
+const uint16_t DOOR_MOVE_TIME = 360;   // Time for door to move from open to close position (360 ms)
+const uint16_t DOOR_OPEN_TIME = 3000;  // Time door stays open before auto-closing (3 seconds)
 
 // MFRC522 and Servo instances
 MFRC522 mfrc522(SS_PIN, RST_PIN);
