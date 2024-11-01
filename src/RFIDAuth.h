@@ -32,7 +32,7 @@ private:
         }
     }
 
-    // Convert RFID UID to database format string
+    // Convert RFID UID to HEX format string
     String formatUID(byte *uidBytes, byte size)
     {
         String result = "";
