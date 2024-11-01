@@ -7,6 +7,17 @@
 #include <ArduinoBearSSL.h> // This library is required for AES128
 #include <AES128.h>
 
+// Include SCE5 headers for hardware RNG
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+#include <hw_sce_private.h>
+#include <hw_sce_trng_private.h>
+#ifdef __cplusplus
+}
+#endif
+
 #include "arduino_secrets.h"
 
 class RFIDAuth
@@ -21,18 +32,47 @@ private:
     const char *deviceUUID;
     WiFiClient client;
     uint8_t aesKey[AES_BLOCK_SIZE] = AES_KEY;
+    bool sce5Initialized = false;
 
-    // Generate a cryptographically secure random IV
-    void generateRandomIV(uint8_t *iv)
+    // Initialize the SCE5 module for secure random number generation
+    bool initializeSCE5()
     {
-        // Seed the random number generator with a random value
-        randomSeed(analogRead(A0) * analogRead(A1));
+        if (sce5Initialized)
+            return true;
 
-        // Fill the IV with random bytes
-        for (int i = 0; i < AES_BLOCK_SIZE; i++)
+        HW_SCE_PowerOn();
+        fsp_err_t err = HW_SCE_McuSpecificInit();
+        if (err != FSP_SUCCESS)
         {
-            iv[i] = random(256); // Generate random byte (0-255)
+            Serial.println("Failed to initialize SCE5!");
+            return false;
         }
+
+        sce5Initialized = true;
+        return true;
+    }
+
+    // Generate a cryptographically secure random IV using hardware TRNG
+    bool generateSecureRandomIV(uint8_t *iv)
+    {
+        if (!initializeSCE5())
+        {
+            return false;
+        }
+
+        // SCE5 generates 128-bit (16-byte) random numbers
+        uint32_t random_data[4] = {0}; // 4 x 32-bit = 128-bit
+        fsp_err_t err = HW_SCE_RNG_Read(random_data);
+
+        if (err != FSP_SUCCESS)
+        {
+            Serial.println("Failed to generate random IV!");
+            return false;
+        }
+
+        // Copy the random data to the IV buffer
+        memcpy(iv, random_data, AES_BLOCK_SIZE);
+        return true;
     }
 
     // Convert RFID UID to HEX format string
@@ -85,11 +125,15 @@ private:
     }
 
     // Encrypt the UID using AES-128-CBC with random IV
-    void encryptUID(byte *uidBytes, byte size, String &encryptedContent, String &ivHex)
+    bool encryptUID(byte *uidBytes, byte size, String &encryptedContent, String &ivHex)
     {
         // Generate a new random IV
         uint8_t iv[AES_BLOCK_SIZE];
-        generateRandomIV(iv);
+        if (!generateSecureRandomIV(iv))
+        {
+            Serial.println("Failed to generate secure IV!");
+            return false;
+        }
 
         // Store IV hex string before encryption
         ivHex = byteArrayToHexString(iv, AES_BLOCK_SIZE);
@@ -130,6 +174,8 @@ private:
         Serial.println(ivHex);
         Serial.print("Encrypted content (hex): ");
         Serial.println(encryptedContent);
+
+        return true;
     }
 
 public:
@@ -157,7 +203,12 @@ public:
 
         // Encrypt the card UID and get IV separately
         String encryptedContent, ivHex;
-        encryptUID(uid.uidByte, uid.size, encryptedContent, ivHex);
+        if (!encryptUID(uid.uidByte, uid.size, encryptedContent, ivHex))
+        {
+            Serial.println("Encryption failed!");
+            client.stop();
+            return false;
+        }
 
         // Create JSON request
         StaticJsonDocument<JSON_BUFFER_SIZE> doc;
