@@ -110,7 +110,7 @@ Create a `arduino_secrets.h` file with the following parameters:
 
 ### Compilation Issues for Renesas Platform
 
-When compiling for Renesas boards (UNO R4 WiFi/Minima), you might encounter compilation errors due to C++ reserved words in the `r_sce_if.h` file. This file is included through dependencies and needs to be modified to compile successfully.
+When compiling for Renesas boards (UNO R4 WiFi), you might encounter compilation errors due to C++ reserved words in the `r_sce_if.h` file. This file is included through dependencies and needs to be modified to compile successfully.
 
 1. **Locate the `r_sce_if.h` file:**
    
