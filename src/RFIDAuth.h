@@ -23,7 +23,7 @@ private:
     void generateRandomIV(uint8_t *iv)
     {
         // Seed the random number generator with a random value
-        randomSeed(analogRead(A0) * millis());
+        randomSeed(analogRead(A0) * analogRead(A1));
 
         // Fill the IV with random bytes
         for (int i = 0; i < 16; i++)
