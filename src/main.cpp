@@ -1,8 +1,10 @@
 #include <Arduino.h>
 #include <MFRC522.h>
 #include <Servo.h>
+#include <WiFiS3.h>
 
 #include "arduino_secrets.h"
+#include "RFIDAuth.h"
 
 // Pins for RFID RC522
 #define RST_PIN 9
@@ -24,12 +26,8 @@
 
 // MFRC522 and Servo instances
 MFRC522 mfrc522(SS_PIN, RST_PIN);
+RFIDAuth rfidAuth(SERVER_ADDRESS, SERVER_PORT, DEVICE_UUID);
 Servo doorServo;
-
-// Array of authorized UIDs
-extern const byte AUTHORIZED_CARDS[][4];
-
-const int NUM_CARDS = NUM_AUTHORIZED_CARDS;
 
 // Door and button state variables
 bool doorIsOpen = false;
@@ -40,10 +38,10 @@ unsigned long lastDebounceTime = 0;
 unsigned long debounceDelay = 50; // Debounce time in milliseconds
 
 void initializeHardware();
+void setupWiFi();
 void processRFIDCard();
 void openDoor();
 void closeDoor();
-bool compareUID(byte *uid1, const byte *uid2);
 void signalAccessGranted();
 void signalAccessDenied();
 void stopServo();
@@ -57,6 +55,7 @@ void setup()
 
   // Initialize hardware
   initializeHardware();
+  setupWiFi();
 
   Serial.println("RFID Door Control System");
   Serial.println("Scan your card or press button to open door...");
@@ -64,14 +63,19 @@ void setup()
 
 void loop()
 {
-  // Check button
-  checkButton();
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    setupWiFi();
+  }
 
   // Check for RFID cards
   if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial())
   {
     processRFIDCard();
   }
+
+  // Check button
+  checkButton();
 
   // Check if current door movement is complete
   if (millis() - lastDoorAction >= DOOR_MOVE_TIME)
@@ -109,6 +113,22 @@ void initializeHardware()
   stopServo(); // Make sure servo is stopped at startup
 }
 
+void setupWiFi()
+{
+  Serial.print("Connecting to WiFi");
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\nWiFi connected!");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
 void checkButton()
 {
   // Read button state
@@ -140,30 +160,12 @@ void checkButton()
 
 void processRFIDCard()
 {
-  // Show UID on serial monitor
-  Serial.print("Card UID:");
-  for (byte i = 0; i < mfrc522.uid.size; i++)
-  {
-    Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
-    Serial.print(mfrc522.uid.uidByte[i], HEX);
-  }
-  Serial.println();
-
-  // Check if card is authorized
-  bool authorized = false;
-  for (int i = 0; i < NUM_CARDS; i++)
-  {
-    if (compareUID(mfrc522.uid.uidByte, AUTHORIZED_CARDS[i]))
-    {
-      authorized = true;
-      break;
-    }
-  }
+  // Check authorization with server
+  bool authorized = rfidAuth.checkCardAuthorization(mfrc522.uid);
 
   // Handle authorization result
   if (authorized)
   {
-    Serial.println("Access Granted!");
     signalAccessGranted();
     if (!doorIsOpen)
     {
@@ -173,7 +175,6 @@ void processRFIDCard()
   }
   else
   {
-    Serial.println("Access Denied!");
     signalAccessDenied();
   }
 
@@ -206,18 +207,6 @@ void closeDoor()
 void stopServo()
 {
   doorServo.write(SERVO_STOP); // Stop servo rotation
-}
-
-bool compareUID(byte *uid1, const byte *uid2)
-{
-  for (byte i = 0; i < 4; i++)
-  {
-    if (uid1[i] != uid2[i])
-    {
-      return false;
-    }
-  }
-  return true;
 }
 
 void signalAccessGranted()
