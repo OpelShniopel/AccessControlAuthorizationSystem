@@ -12,12 +12,15 @@
 class RFIDAuth
 {
 private:
+    static const size_t AES_BLOCK_SIZE = 16;
+    static const unsigned long REQUEST_TIMEOUT_MS = 5000;
+    static const size_t JSON_BUFFER_SIZE = 180;
+
     const char *serverAddress;
     int serverPort;
     const char *deviceUUID;
     WiFiClient client;
-
-    uint8_t aesKey[16] = AES_KEY;
+    uint8_t aesKey[AES_BLOCK_SIZE] = AES_KEY;
 
     // Generate a cryptographically secure random IV
     void generateRandomIV(uint8_t *iv)
@@ -26,7 +29,7 @@ private:
         randomSeed(analogRead(A0) * analogRead(A1));
 
         // Fill the IV with random bytes
-        for (int i = 0; i < 16; i++)
+        for (int i = 0; i < AES_BLOCK_SIZE; i++)
         {
             iv[i] = random(256); // Generate random byte (0-255)
         }
@@ -85,11 +88,11 @@ private:
     void encryptUID(byte *uidBytes, byte size, String &encryptedContent, String &ivHex)
     {
         // Generate a new random IV
-        uint8_t iv[16];
+        uint8_t iv[AES_BLOCK_SIZE];
         generateRandomIV(iv);
 
         // Store IV hex string before encryption
-        ivHex = byteArrayToHexString(iv, 16);
+        ivHex = byteArrayToHexString(iv, AES_BLOCK_SIZE);
 
         // First convert UID to hex string format
         String formattedUID = formatUID(uidBytes, size);
@@ -100,28 +103,28 @@ private:
         size_t uidByteLength = size;
 
         // Prepare input buffer with padding
-        uint8_t input[16] = {0}; // AES block size
+        uint8_t input[AES_BLOCK_SIZE] = {0}; // AES block size
 
         // Copy direct UID bytes
         memcpy(input, uidBytes, uidByteLength);
 
         // Add PKCS7 padding
-        size_t padLength = 16 - (uidByteLength % 16); // Calculate padding length
-        for (size_t i = uidByteLength; i < 16; i++)
+        size_t padLength = AES_BLOCK_SIZE - (uidByteLength % AES_BLOCK_SIZE); // Calculate padding length
+        for (size_t i = uidByteLength; i < AES_BLOCK_SIZE; i++)
         {
             input[i] = padLength;
         }
 
-        printBytes("Input before encryption", input, 16);
-        printBytes("Random IV", iv, 16);
+        printBytes("Input before encryption", input, AES_BLOCK_SIZE);
+        printBytes("Random IV", iv, AES_BLOCK_SIZE);
 
         // Encrypt the padded data
-        AES128.runEnc(aesKey, 16, input, 16, iv);
+        AES128.runEnc(aesKey, AES_BLOCK_SIZE, input, AES_BLOCK_SIZE, iv);
 
-        printBytes("Encrypted bytes", input, 16);
+        printBytes("Encrypted bytes", input, AES_BLOCK_SIZE);
 
         // Convert encrypted data to hex string
-        encryptedContent = byteArrayToHexString(input, 16);
+        encryptedContent = byteArrayToHexString(input, AES_BLOCK_SIZE);
 
         Serial.print("IV (hex): ");
         Serial.println(ivHex);
@@ -157,7 +160,7 @@ public:
         encryptUID(uid.uidByte, uid.size, encryptedContent, ivHex);
 
         // Create JSON request
-        StaticJsonDocument<1024> doc;
+        StaticJsonDocument<JSON_BUFFER_SIZE> doc;
         doc["UUID"] = deviceUUID;
         doc["iv"] = ivHex;
         doc["content"] = encryptedContent;
@@ -183,7 +186,7 @@ public:
         unsigned long timeout = millis();
         while (client.available() == 0)
         {
-            if (millis() - timeout > 5000)
+            if (millis() - timeout > REQUEST_TIMEOUT_MS)
             {
                 Serial.println("Request timeout!");
                 client.stop();
