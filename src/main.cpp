@@ -48,7 +48,7 @@ unsigned long debounceDelay = 50; // Debounce time in milliseconds
 void initializeHardware();
 void setupWiFi();
 void processRFIDCard();
-void captureUnauthorizedAccess();
+void capturePhotoToSD();
 void checkButton();
 void openDoor();
 void closeDoor();
@@ -225,7 +225,7 @@ void processRFIDCard()
   mfrc522.PCD_StopCrypto1();
 }
 
-void captureUnauthorizedAccess()
+void capturePhotoToSD()
 {
   char filename[20];
   static int imageCounter = 0;
@@ -379,7 +379,7 @@ void signalAccessDenied()
   digitalWrite(RED_LED, HIGH);
 
   // Capture photo of unauthorized access attempt
-  captureUnauthorizedAccess();
+  capturePhotoToSD();
 
   for (int i = 0; i < 3; i++)
   {
