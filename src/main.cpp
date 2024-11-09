@@ -4,6 +4,7 @@
 #include <WiFiS3.h>
 #include <ArduCAM.h>
 #include <SD.h>
+#include <LiquidCrystal_I2C.h>
 #include "memorysaver.h"
 
 #include "arduino_secrets.h"
@@ -36,6 +37,12 @@ MFRC522 mfrc522(RFID_CS, RST_PIN);
 RFIDAuth rfidAuth(SERVER_ADDRESS, SERVER_PORT, DEVICE_UUID);
 Servo doorServo;
 ArduCAM myCAM(OV5642, ARDUCAM_CS);
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// Custom messages for LCD
+const char *MSG_READY = "Ready: Scan Card";
+const char *MSG_ACCESS_GRANTED = "Access Granted!";
+const char *MSG_ACCESS_DENIED = "Access Denied!";
 
 // Door and button state variables
 bool doorIsOpen = false;
@@ -101,6 +108,11 @@ void loop()
 
 void initializeHardware()
 {
+  // Initialize LCD
+  lcd.init();
+  lcd.backlight();
+  lcd.clear();
+
   // Initialize pins
   pinMode(GREEN_LED, OUTPUT);
   pinMode(RED_LED, OUTPUT);
@@ -182,6 +194,10 @@ void initializeHardware()
   // Initialize servo
   doorServo.attach(SERVO_PIN);
   stopServo(); // Make sure servo is stopped at startup
+
+  // Show ready message on LCD
+  lcd.clear();
+  lcd.print(MSG_READY);
 }
 
 void setupWiFi()
@@ -202,12 +218,18 @@ void setupWiFi()
 
 void processRFIDCard()
 {
+  // Show scanning message
+  lcd.clear();
+  lcd.print("Checking Card...");
+
   // Check authorization with server
   bool authorized = rfidAuth.checkCardAuthorization(mfrc522.uid);
 
   // Handle authorization result
   if (authorized)
   {
+    lcd.clear();
+    lcd.print(MSG_ACCESS_GRANTED);
     signalAccessGranted();
     if (!doorIsOpen)
     {
@@ -217,12 +239,19 @@ void processRFIDCard()
   }
   else
   {
+    lcd.clear();
+    lcd.print(MSG_ACCESS_DENIED);
     signalAccessDenied();
   }
 
   // Halt PICC and stop encryption on PCD
   mfrc522.PICC_HaltA();
   mfrc522.PCD_StopCrypto1();
+
+  // Return to ready message after a delay
+  delay(DOOR_OPEN_TIME);
+  lcd.clear();
+  lcd.print(MSG_READY);
 }
 
 void capturePhotoToSD()
@@ -345,6 +374,7 @@ void checkButton()
 void openDoor()
 {
   Serial.println("Opening door...");
+
   doorServo.write(SERVO_OPEN_SPEED); // Rotate to open position
   doorIsOpen = true;
   lastDoorAction = millis();
@@ -356,6 +386,7 @@ void openDoor()
 void closeDoor()
 {
   Serial.println("Closing door...");
+
   doorServo.write(SERVO_CLOSE_SPEED); // Rotate back to closed position
   doorIsOpen = false;
   lastDoorAction = millis();
