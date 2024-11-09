@@ -103,6 +103,10 @@ void loop()
   if (doorIsOpen && (millis() - doorOpenStartTime >= DOOR_OPEN_TIME))
   {
     closeDoor();
+
+    // After closing, show ready message on LCD
+    lcd.clear();
+    lcd.print(MSG_READY);
   }
 }
 
@@ -247,11 +251,6 @@ void processRFIDCard()
   // Halt PICC and stop encryption on PCD
   mfrc522.PICC_HaltA();
   mfrc522.PCD_StopCrypto1();
-
-  // Return to ready message after a delay
-  delay(DOOR_OPEN_TIME);
-  lcd.clear();
-  lcd.print(MSG_READY);
 }
 
 void capturePhotoToSD()
@@ -410,7 +409,7 @@ void signalAccessDenied()
   digitalWrite(RED_LED, HIGH);
 
   // Capture photo of unauthorized access attempt
-  capturePhotoToSD();
+  // capturePhotoToSD();
 
   for (int i = 0; i < 3; i++)
   {
@@ -419,4 +418,8 @@ void signalAccessDenied()
   }
 
   digitalWrite(RED_LED, LOW);
+
+  delay(2000);
+  lcd.clear();
+  lcd.print(MSG_READY);
 }
