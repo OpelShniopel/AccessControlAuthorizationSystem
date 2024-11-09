@@ -409,7 +409,7 @@ void signalAccessDenied()
   digitalWrite(RED_LED, HIGH);
 
   // Capture photo of unauthorized access attempt
-  // capturePhotoToSD();
+  capturePhotoToSD();
 
   for (int i = 0; i < 3; i++)
   {
