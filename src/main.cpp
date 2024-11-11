@@ -11,7 +11,7 @@ const uint8_t RST_PIN = 9;
 const uint8_t SS_PIN = 10;
 
 // Pins for status indicators and controls
-const uint8_t GREEN_LED = 7;
+const uint8_t GREEN_LED = 4;
 const uint8_t RED_LED = 6;
 const uint8_t BUZZER = 5;
 const uint8_t SERVO_PIN = 3;
