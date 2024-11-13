@@ -1,24 +1,29 @@
 # RFID Door Control System - Arduino Client
 
-A secure, WiFi-enabled RFID door control system built with Arduino. The system provides controlled access through RFID card authentication by communicating with a centralized authentication server, featuring automatic door control with visual and audio feedback.
+A secure, WiFi-enabled RFID door control system built with Arduino. The system provides controlled access through RFID card authentication by communicating with a centralized authentication server, featuring automatic door control with visual feedback, audio feedback, and unauthorized access monitoring.
 
 ## Features
 - RFID card authentication via secure server communication
 - AES-128-CBC encryption for card data transmission
 - WiFi connectivity for real-time authorization checks
 - Automatic door control using a servo motor
-- Visual feedback (green/red LEDs)
+- Visual feedback (green/red LEDs and LCD display)
 - Audio feedback (buzzer)
 - Manual override button
 - Automatic door closing after configurable delay
 - Secure configuration storage
 - Debounced input handling
+- Photo capture of unauthorized access attempts
+- LCD status display
 
 ## System Requirements
 
 ### Hardware Requirements
 - Arduino UNO R4 WiFi board
 - MFRC522 RFID reader
+- ArduCAM OV5642 camera module
+- SD card module
+- LCD display (I2C interface)
 - Continuous rotation servo motor
 - LEDs (green and red)
 - Buzzer
@@ -30,8 +35,12 @@ A secure, WiFi-enabled RFID door control system built with Arduino. The system p
 - RFID RC522:
   - RST_PIN: 9
   - SS_PIN: 10
+- ArduCAM:
+  - CS_PIN: 7
+- SD Card:
+  - CS_PIN: 8
 - Status Indicators:
-  - GREEN_LED: 7
+  - GREEN_LED: 4
   - RED_LED: 6
   - BUZZER: 5
 - Controls:
@@ -46,6 +55,9 @@ Required Arduino Libraries:
 - ArduinoJson
 - ArduinoBearSSL
 - AES128
+- ArduCAM
+- SD
+- LiquidCrystal_I2C
 
 ### Server Requirement
 This client requires a compatible authentication server. The server implementation can be found at:
@@ -67,13 +79,18 @@ Create a `arduino_secrets.h` file with the following parameters:
 
 1. **Encrypted Communication**
    - AES-128-CBC encryption for RFID card data
-   - Random IV generation for each transaction
+   - Random IV generation for each transaction using hardware TRNG
    - Secure key storage in separate header file
    - PKCS7 padding for encryption
 
 2. **Device Authentication**
    - Device UUID verification with server
    - Encrypted card data transmission
+
+3. **Access Monitoring**
+   - Photo capture of unauthorized access attempts
+   - Images stored on SD card with timestamp
+   - 320x240 JPEG format
 
 ## Door Control System
 
@@ -83,6 +100,7 @@ Create a `arduino_secrets.h` file with the following parameters:
    - Encrypts card data with random IV
    - Validates with server
    - Controls door based on authorization
+   - Captures photo on unauthorized attempts
 
 2. **Manual Override**
    - Push button for internal access
@@ -97,14 +115,27 @@ Create a `arduino_secrets.h` file with the following parameters:
   - Open: 0°
   - Close: 180°
 
+### User Feedback
+- LCD Display Messages:
+  - "Ready: Scan Card"
+  - "Access Granted!"
+  - "Access Denied!"
+- LED Indicators:
+  - Green: Access granted/door open
+  - Red: Access denied (flashing)
+- Buzzer Patterns:
+  - Access Granted: Single 2000Hz beep
+  - Access Denied: Three 500Hz beeps
+
 ## Installation & Setup
 
 1. Install required libraries through Arduino Library Manager
 2. Configure `arduino_secrets.h` with your network and security settings
-3. Ensure the authentication server is set up and running (see server repository)
+3. Ensure the authentication server is set up and running
 4. Upload to your Arduino board
 5. Connect hardware according to pin configuration
 6. Test system with authorized RFID cards
+7. Verify photo capture functionality
 
 ## Troubleshooting
 
@@ -136,6 +167,15 @@ When compiling for Renesas boards (UNO R4 WiFi), you might encounter compilation
    - The file location might vary based on your PlatformIO installation and project configuration
    - Make sure to clean and rebuild the project after making these changes
 
+### ArduCAM Compatibility for UNO R4
+
+The default ArduCAM library was written for Arduino UNO R3 and requires modification to work with the UNO R4 WiFi board. You'll need to:
+
+1. Replace the existing `ArduCAM.h` file in your ArduCAM library with the updated version from:
+   [https://github.com/keeeal/ArduCAM-Arduino-Uno-R4/blob/master/ArduCAM/ArduCAM.h](https://github.com/keeeal/ArduCAM-Arduino-Uno-R4/blob/master/ArduCAM/ArduCAM.h)
+
+2. The updated file includes necessary modifications for compatibility with the Renesas architecture used in the UNO R4.
+
 ### Common Issues
 
 1. **WiFi Connection**
@@ -153,10 +193,21 @@ When compiling for Renesas boards (UNO R4 WiFi), you might encounter compilation
    - Adjust timing parameters for your setup
    - Check mechanical clearances
 
-### LED Status Indicators
+4. **Camera/SD Card Issues**
+   - Verify SD card is properly formatted (FAT32)
+   - Check camera module connections
+   - Ensure sufficient power supply
+
+### Status Indicators Guide
+- **LCD Display**
+  - Shows current system status and feedback
+  - Error messages for troubleshooting
 - **Green LED**
   - Solid: Access granted/door open
   - Off: Door closed/system ready
 - **Red LED**
   - Flash: Access denied
   - Off: System ready
+- **Buzzer**
+  - Single beep: Access granted
+  - Triple beep: Access denied
