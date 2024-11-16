@@ -11,19 +11,19 @@
 #include "RFIDAuth.h"
 
 // Pins for RFID RC522
-const uint8_t RST_PIN = 9;
-const uint8_t RFID_CS = 10;
+#define RST_PIN 9
+#define RFID_CS 10
 
 // Pins for ArduCAM and SD Card
-const uint8_t ARDUCAM_CS = 7;
-const uint8_t SD_CS = 8;
+#define ARDUCAM_CS 7
+#define SD_CS 8
 
 // Pins for status indicators and controls
-const uint8_t GREEN_LED = 4;
-const uint8_t RED_LED = 6;
-const uint8_t BUZZER = 5;
-const uint8_t SERVO_PIN = 3;
-const uint8_t BUTTON_PIN = 2;
+#define GREEN_LED 4
+#define RED_LED 6
+#define BUZZER 5
+#define SERVO_PIN 3
+#define BUTTON_PIN 2
 
 // Servo control values for continuous rotation servo
 const uint8_t SERVO_STOP = 90;         // Stop point (should be calibrated with potentiometer)
