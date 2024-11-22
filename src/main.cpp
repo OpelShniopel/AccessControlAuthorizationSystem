@@ -5,6 +5,9 @@
 #include <ArduCAM.h>
 #include <SD.h>
 #include <LiquidCrystal_I2C.h>
+#include <NTPClient.h>
+#include <WiFiUdp.h>
+#include "RTC.h"
 #include "memorysaver.h"
 
 #include "arduino_secrets.h"
@@ -32,12 +35,16 @@ const uint8_t SERVO_CLOSE_SPEED = 180; // Full speed other direction
 const uint16_t DOOR_MOVE_TIME = 360;   // Time for door to move from open to close position (360 ms)
 const uint16_t DOOR_OPEN_TIME = 3000;  // Time door stays open before auto-closing (3 seconds)
 
-// Initialize RFID, Servo, and ArduCAM objects
+// Initialize RFID, Servo, ArduCAM, SD Card and LCD objects
 MFRC522 mfrc522(RFID_CS, RST_PIN);
 RFIDAuth rfidAuth(SERVER_ADDRESS, SERVER_PORT, DEVICE_UUID);
 Servo doorServo;
 ArduCAM myCAM(OV5642, ARDUCAM_CS);
 LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// Initialize NTP client
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP);
 
 // Custom messages for LCD
 const char *MSG_READY = "Ready: Scan Card";
@@ -54,6 +61,9 @@ unsigned long debounceDelay = 50; // Debounce time in milliseconds
 
 void initializeHardware();
 void setupWiFi();
+void initializeRTC();
+bool isDaylightSaving(int month, int day);
+String getTimestampFilename();
 void processRFIDCard();
 void capturePhotoToSD();
 void checkButton();
@@ -71,7 +81,10 @@ void setup()
 
   // Initialize hardware
   initializeHardware();
+
+  // Initialize WiFi and RTC
   setupWiFi();
+  initializeRTC();
 
   Serial.println("RFID Door Control System");
   Serial.println("Scan your card or press button to open door...");
@@ -220,6 +233,54 @@ void setupWiFi()
   Serial.println(WiFi.localIP());
 }
 
+void initializeRTC()
+{
+  RTC.begin();
+  timeClient.begin();
+  timeClient.update();
+
+  const int baseOffset = 2; // Lithuania base UTC+2
+  RTCTime currentTime = RTCTime(timeClient.getEpochTime());
+  bool isDST = isDaylightSaving(Month2int(currentTime.getMonth()), currentTime.getDayOfMonth());
+  int finalOffset = isDST ? baseOffset + 1 : baseOffset;
+
+  auto unixTime = timeClient.getEpochTime() + (finalOffset * 3600);
+  RTCTime timeToSet = RTCTime(unixTime);
+  RTC.setTime(timeToSet);
+}
+
+bool isDaylightSaving(int month, int day)
+{
+  if (month < 3 || month > 10)
+    return false;
+  if (month > 3 && month < 10)
+    return true;
+
+  int lastSunday = 31 - (day % 7);
+  if (month == 3)
+    return day >= lastSunday;
+  if (month == 10)
+    return day < lastSunday;
+  return false;
+}
+
+String getTimestampFilename()
+{
+  RTCTime currentTime;
+  RTC.getTime(currentTime);
+
+  char timestamp[32];
+  sprintf(timestamp, "%04d%02d%02d_%02d%02d%02d.jpg",
+          currentTime.getYear(),
+          Month2int(currentTime.getMonth()),
+          currentTime.getDayOfMonth(),
+          currentTime.getHour(),
+          currentTime.getMinutes(),
+          currentTime.getSeconds());
+
+  return String(timestamp);
+}
+
 void processRFIDCard()
 {
   // Show scanning message
@@ -255,12 +316,8 @@ void processRFIDCard()
 
 void capturePhotoToSD()
 {
-  char filename[20];
-  static int imageCounter = 0;
+  String filename = getTimestampFilename();
   byte buf[256];
-
-  // Create unique filename using timestamp
-  sprintf(filename, "unauth_%d.jpg", imageCounter++);
 
   // Prepare camera
   myCAM.flush_fifo();
