@@ -28,8 +28,6 @@ A secure, WiFi-enabled RFID door control system built with Arduino. The system p
 - LEDs (green and red)
 - Buzzer
 - Push button
-- Power supply
-- Door mounting hardware
 
 ### Pin Configuration
 - RFID RC522:
@@ -191,12 +189,10 @@ The default ArduCAM library was written for Arduino UNO R3 and requires modifica
 3. **Door Operation**
    - Calibrate servo stop position if needed
    - Adjust timing parameters for your setup
-   - Check mechanical clearances
 
 4. **Camera/SD Card Issues**
    - Verify SD card is properly formatted (FAT32)
    - Check camera module connections
-   - Ensure sufficient power supply
 
 ### Status Indicators Guide
 - **LCD Display**
