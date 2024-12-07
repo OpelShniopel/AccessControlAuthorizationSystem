@@ -269,16 +269,27 @@ String getTimestampFilename()
   RTCTime currentTime;
   RTC.getTime(currentTime);
 
-  char timestamp[32];
-  sprintf(timestamp, "%04d%02d%02d_%02d%02d%02d.jpg",
+  // Create a folder for the current date if it doesn't exist
+  char dateFolder[16];
+  sprintf(dateFolder, "/%04d%02d%02d",
           currentTime.getYear(),
           Month2int(currentTime.getMonth()),
-          currentTime.getDayOfMonth(),
+          currentTime.getDayOfMonth());
+
+  if (!SD.exists(dateFolder))
+  {
+    SD.mkdir(dateFolder);
+  }
+
+  // Create the full timestamp filename with path
+  char filename[64];
+  sprintf(filename, "%s/%02d%02d%02d.jpg",
+          dateFolder,
           currentTime.getHour(),
           currentTime.getMinutes(),
           currentTime.getSeconds());
 
-  return String(timestamp);
+  return String(filename);
 }
 
 void processRFIDCard()
